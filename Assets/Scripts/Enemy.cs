@@ -31,6 +31,7 @@ public class Enemy : MonoBehaviour
 	/// </summary>
 	public void Start()
     {
+
     }
 
     /// <summary>  
@@ -38,5 +39,6 @@ public class Enemy : MonoBehaviour
     /// </summary>  
     public void Update()
     {
+
     }
 }
