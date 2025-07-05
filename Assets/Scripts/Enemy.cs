@@ -1,5 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Net.WebSockets;
+using System.Security.Principal;
 using UnityEngine;
 using static UnityEngine.GraphicsBuffer;
 
@@ -34,20 +36,52 @@ public class Enemy : MonoBehaviour
 	}
 
 	//追尾　可否
-    private bool isChasing = false;
+   // private bool isChasing = false;
 	/// <summary>
 	/// 開始処理
 	/// </summary>
 	public void Start()
     {
-		
+		worldMatrix_ = Matrix4x4.TRS(transform.position, Quaternion.identity, Vector3.one);
     }
 
     /// <summary>  
     /// 更新処理  
     /// </summary>  
     public void Update()
-    {
+	{
+		if (!player_) { return; }
+
+		var normalz = new Vector3(0, 0, 1);
+		var forward = worldMatrix_ * normalz;
+
+		var toPlayerNormal = (player_.transform.position - transform.position).normalized;
+
+		var dot = Vector3.Dot(toPlayerNormal, forward);
+
+		var inViewCos = Mathf.Cos(20.0f * Mathf.Deg2Rad);
+
+		if (inViewCos <= dot)
+		{
+			var cross = Vector3.Cross(forward, toPlayerNormal);
+
+			var radian = Mathf.Min(Mathf.Acos(dot), (10.0f * Mathf.Deg2Rad));
+
+			radian *= (cross.y / Mathf.Abs(cross.y));
+
+			var rotMatrix = Matrix4x4.Rotate(Quaternion.Euler(0, Mathf.Rad2Deg * radian, 0));
+			worldMatrix_ = worldMatrix_ * rotMatrix;
+
+			var f = new Vector3(0, 0, 0.2f);
+			var move = worldMatrix_ * f;
+
+			var pos = worldMatrix_.GetColumn(3) + move;
+			worldMatrix_.SetColumn(3, pos);
+		}
+		transform.position = worldMatrix_.GetColumn(3);
+		transform.rotation = worldMatrix_.rotation;
+		transform.localScale = worldMatrix_.lossyScale;
+		/*ここから自分の
 		// プレイヤーの位置とエネミーの位置の差を計算
 		Vector3 directionToPlayer = player_.transform.position - transform.position;
 		float distance = directionToPlayer.magnitude;
@@ -55,7 +89,7 @@ public class Enemy : MonoBehaviour
 		// 視野範囲内かつ一定距離内にいるかをチェック
 		if (distance <= detectionDistance)
 		{
-			// 視野角チェック（内積）
+			// 視野角チェック
 			float dot = Vector3.Dot(transform.forward, directionToPlayer.normalized);
 			if (dot >= Mathf.Cos(viewAngle * Mathf.Deg2Rad))
 			{
@@ -63,7 +97,7 @@ public class Enemy : MonoBehaviour
 				if (!isChasing)
 				{
 					isChasing = true;
-					SetTarget(true); // プレイヤーをターゲットにする
+					SetTarget(true); //ターゲットにする
 				}
 			}
 			else
@@ -72,7 +106,7 @@ public class Enemy : MonoBehaviour
 				if (isChasing)
 				{
 					isChasing = false;
-					SetTarget(false); // プレイヤーをターゲットから解除
+					SetTarget(false); // ターゲットから解除
 				}
 			}
 		}
@@ -82,12 +116,8 @@ public class Enemy : MonoBehaviour
 		{
 			// プレイヤー方向に回転
 			Quaternion targetRotation = Quaternion.LookRotation(directionToPlayer);
-
-			// 毎フレーム10度回転する
 			transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRotation, rotationPerFrame);
-
-			// プレイヤーの方向へ移動
 			transform.position += transform.forward * moveSpeed * Time.deltaTime;
-		}
+		}*/
 	}
 }
